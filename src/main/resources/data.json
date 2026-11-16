@@ -1,0 +1,26 @@
+{
+  "trainees": [
+    {
+      "firstName": "Alice",
+      "lastName": "Smith",
+      "adress": "Kyiv, Main St 1",
+      "dateofBirth": "1995-05-12T00:00:00.000+0000",
+      "username": "Alice.Smith",
+      "password": "password123",
+      "active": true
+    }
+  ],
+  "trainers": [
+    {
+      "firstName": "Bob",
+      "lastName": "Builder",
+      "specialization": {
+        "trainingTypeName": "Fitness"
+      },
+      "username": "Bob.Builder",
+      "password": "password123",
+      "active": true
+    }
+  ],
+  "trainings": []
+}
