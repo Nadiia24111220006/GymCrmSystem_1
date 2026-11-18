@@ -15,7 +15,8 @@ public class TrainerDao {
     private AtomicLong trainerIdCounter;
 
     @Autowired
-    public void setStorage(@Qualifier("trainerStorage") Map<Long, Trainer> trainerMap, AtomicLong trainerIdCounter) {
+    public void setStorage(@Qualifier("trainerStorage") Map<Long, Trainer> trainerMap,
+                           @Qualifier("trainerIdCounter") AtomicLong trainerIdCounter) {
         this.trainerMap = trainerMap;
         this.trainerIdCounter = trainerIdCounter;
     }
