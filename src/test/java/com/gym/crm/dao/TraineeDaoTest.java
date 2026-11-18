@@ -1,11 +1,12 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.model.Trainee;
-import com.gym.crm.storage.Storage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,9 +16,8 @@ public class TraineeDaoTest {
 
     @BeforeEach
     public void setUp() {
-        Storage storage = new Storage();
         traineeDao = new TraineeDao();
-        traineeDao.setStorage(storage);
+        traineeDao.setStorage(new HashMap<>(), new AtomicLong(1L));
     }
 
     @Test
@@ -28,6 +28,7 @@ public class TraineeDaoTest {
         Trainee found = traineeDao.findById(1L);
         assertNotNull(found);
         assertEquals("Alice", found.getFirstName());
+        assertEquals(1L, found.getId());
     }
 
     @Test

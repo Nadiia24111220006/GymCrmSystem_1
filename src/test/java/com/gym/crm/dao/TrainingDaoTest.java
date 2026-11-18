@@ -4,11 +4,12 @@ import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
 import com.gym.crm.model.TrainingType;
-import com.gym.crm.storage.Storage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,9 +18,8 @@ public class TrainingDaoTest {
 
     @BeforeEach
     public void setUp() {
-        Storage storage = new Storage();
         trainingDao = new TrainingDao();
-        trainingDao.setStorage(storage);
+        trainingDao.setStorage(new HashMap<>(), new AtomicLong(1L));
     }
 
     @Test

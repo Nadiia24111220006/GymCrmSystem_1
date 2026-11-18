@@ -1,6 +1,8 @@
 package com.gym.crm.model;
 
 public class User {
+
+    private Long id;
     private String firstName;
     private String lastName;
     private String username;
@@ -14,6 +16,14 @@ public class User {
         this.firstName = firstName;
         this.lastName = lastName;
         this.isActive = true;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {

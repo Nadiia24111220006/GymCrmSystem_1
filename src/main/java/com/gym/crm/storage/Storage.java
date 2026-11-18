@@ -3,43 +3,43 @@ package com.gym.crm.storage;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-@Component
+@Configuration
 public class Storage {
-    private final Map<Long, Trainee> traineeMap = new HashMap<>();
-    private final Map<Long, Trainer> trainerMap = new HashMap<>();
-    private final Map<Long, Training> trainingMap = new HashMap<>();
 
-    private final AtomicLong traineeIdCounter = new AtomicLong(1L);
-    private final AtomicLong trainerIdCounter = new AtomicLong(1L);
-    private final AtomicLong trainingIdCounter = new AtomicLong(1L);
-
-    public Map<Long, Trainee> getTraineeMap() {
-        return traineeMap;
+    @Bean(name = "traineeStorage")
+    public Map<Long, Trainee> traineeMap() {
+        return new HashMap<>();
     }
 
-    public Map<Long, Trainer> getTrainerMap() {
-        return trainerMap;
+    @Bean(name = "trainerStorage")
+    public Map<Long, Trainer> trainerMap() {
+        return new HashMap<>();
     }
 
-    public Map<Long, Training> getTrainingMap() {
-        return trainingMap;
+    @Bean(name = "trainingStorage")
+    public Map<Long, Training> trainingMap() {
+        return new HashMap<>();
     }
 
-    public long generateTraineeId() {
-        return traineeIdCounter.getAndIncrement();
+    @Bean
+    public AtomicLong traineeIdCounter() {
+        return new AtomicLong(1L);
     }
 
-    public long generateTrainerId() {
-        return trainerIdCounter.getAndIncrement();
+    @Bean
+    public AtomicLong trainerIdCounter() {
+        return new AtomicLong(1L);
     }
 
-    public long generateTrainingId() {
-        return trainingIdCounter.getAndIncrement();
+    @Bean
+    public AtomicLong trainingIdCounter() {
+        return new AtomicLong(1L);
     }
 }

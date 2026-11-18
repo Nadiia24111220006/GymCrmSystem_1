@@ -1,44 +1,48 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.model.Training;
-import com.gym.crm.storage.Storage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class TrainingDao {
-    private Storage storage;
+    private Map<Long, Training> trainingMap;
+    private AtomicLong trainingIdCounter;
 
     @Autowired
-    public void setStorage(Storage storage) {
-        this.storage = storage;
+    public void setStorage(@Qualifier("trainingStorage") Map<Long, Training> trainingMap, AtomicLong trainingIdCounter) {
+        this.trainingMap = trainingMap;
+        this.trainingIdCounter = trainingIdCounter;
     }
 
     public Training save(Training training) {
-        long id = storage.generateTrainingId();
-        storage.getTrainingMap().put(id, training);
+        long id = trainingIdCounter.getAndIncrement();
+        trainingMap.put(id, training);
         return training;
     }
 
     public Training findById(long id) {
-        return storage.getTrainingMap().get(id);
+        return trainingMap.get(id);
     }
 
     public Training update(long id, Training updatedTraining) {
-        if (storage.getTrainingMap().containsKey(id)) {
-            storage.getTrainingMap().put(id, updatedTraining);
+        if (trainingMap.containsKey(id)) {
+            trainingMap.put(id, updatedTraining);
             return updatedTraining;
         }
         return null;
     }
 
     public void delete(long id) {
-        storage.getTrainingMap().remove(id);
+        trainingMap.remove(id);
     }
 
     public Collection<Training> findAll() {
-        return storage.getTrainingMap().values();
+        return trainingMap.values();
     }
 }
