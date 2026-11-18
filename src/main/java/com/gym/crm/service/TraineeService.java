@@ -1,23 +1,31 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TraineeDao;
+import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainee;
+import com.gym.crm.model.Trainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.SecureRandom;
 import java.util.Collection;
-import java.util.Random;
 
 @Service
 public class TraineeService {
     private static final Logger log = LoggerFactory.getLogger(TraineeService.class);
     private TraineeDao traineeDao;
+    private TrainerDao trainerDao;
 
     @Autowired
     public void setTraineeDao(TraineeDao traineeDao) {
         this.traineeDao = traineeDao;
+    }
+
+    @Autowired
+    public void setTrainerDao(TrainerDao trainerDao) {
+        this.trainerDao = trainerDao;
     }
 
     public Trainee createTrainee(String firstName, String lastName, java.util.Date dateOfBirth, String address) {
@@ -33,23 +41,24 @@ public class TraineeService {
         return traineeDao.save(trainee);
     }
 
+    private boolean isUsernameTaken(String username) {
+        for (Trainee trainee : traineeDao.findAll()) {
+            if (trainee.getUsername() != null && trainee.getUsername().equals(username)) return true;
+        }
+        for (Trainer trainer : trainerDao.findAll()) {
+            if (trainer.getUsername() != null && trainer.getUsername().equals(username)) return true;
+        }
+        return false;
+    }
+
     private String generateUsername(String firstName, String lastName) {
         String baseUsername = firstName + "." + lastName;
         String username = baseUsername;
         int counter = 1;
 
-        boolean exists;
-        do {
-            exists = false;
-            for (Trainee t : traineeDao.findAll()) {
-                if (t.getUsername() != null && t.getUsername().equals(username)) {
-                    exists = true;
-                    username = baseUsername + counter;
-                    counter++;
-                    break;
-                }
-            }
-        } while (exists);
+        while (isUsernameTaken(username)) {
+            username = baseUsername + counter++;
+        }
         log.debug("Generated unique username: {}", username);
         return username;
     }
@@ -57,7 +66,7 @@ public class TraineeService {
     private String generatePassword() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder sb = new StringBuilder();
-        Random random = new Random();
+        SecureRandom random = new SecureRandom();
         for (int i = 0; i < 10; i++) {
             sb.append(chars.charAt(random.nextInt(chars.length())));
         }
@@ -75,10 +84,18 @@ public class TraineeService {
     }
 
     public Trainee update(long id, Trainee trainee) {
+        if (trainee.getUsername() != null) {
+            Trainee existing = traineeDao.findById(id);
+            if (existing == null || !existing.getUsername().equals(trainee.getUsername())) {
+                if (isUsernameTaken(trainee.getUsername())) {
+                    log.warn("Username {} is already taken. Generating unique one.", trainee.getUsername());
+                    trainee.setUsername(generateUsername(trainee.getFirstName(), trainee.getLastName()));
+                }
+            }
+        }
         return traineeDao.update(id, trainee);
     }
-
-    public void delete(long id) {
-        traineeDao.delete(id);
-    }
+        public void delete ( long id){
+            traineeDao.delete(id);
+        }
 }

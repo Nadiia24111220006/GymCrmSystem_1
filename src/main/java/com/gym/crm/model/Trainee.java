@@ -3,32 +3,53 @@ package com.gym.crm.model;
 import java.util.Date;
 
 public class Trainee extends User {
-    private String adress;
-    private Date dateofBirth;
+    private String address;
+    private Date dateOfBirth;
 
     public Trainee() {
         super();
     }
-        public Trainee(String firstName, String lastName, String adress, Date dateofBirth) {
+
+    public Trainee(String firstName, String lastName, String address, Date dateOfBirth) {
         super(firstName, lastName);
-        this.adress = adress;
-        this.dateofBirth = dateofBirth;
+        this.address = address;
+        this.dateOfBirth = dateOfBirth;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public Date getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(Date dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    @Deprecated
     public String getAdress() {
-        return adress;
+        return address;
     }
 
-    public void setAdress(String adress) {
-        this.adress = adress;
+    @Deprecated
+    public void setAdress(String address) {
+        this.address = address;
     }
 
+    @Deprecated
     public Date getDateofBirth() {
-        return dateofBirth;
+        return dateOfBirth;
     }
 
-    public void setDateofBirth(Date dateofBirth) {
-        this.dateofBirth = dateofBirth;
+    @Deprecated
+    public void setDateofBirth(Date dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
     }
 }
 

@@ -11,8 +11,8 @@ public class StorageTest {
         Storage storage = new Storage();
 
         Map<?, ?> traineeMap = storage.traineeMap();
-        Map<?, ?> trainerMap = storage.traineeMap();
-        Map<?, ?> trainingMap = storage.traineeMap();
+        Map<?, ?> trainerMap = storage.trainerMap();
+        Map<?, ?> trainingMap = storage.trainingMap();
 
         assertNotNull(traineeMap);
         assertNotNull(trainerMap);

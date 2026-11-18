@@ -1,6 +1,7 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
+import com.gym.crm.dao.TraineeDao;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.TrainingType;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,9 @@ public class TrainerServiceTest {
 
     @Mock
     private TrainerDao trainerDao;
+
+    @Mock
+    private TraineeDao traineeDao;
 
     @InjectMocks
     private TrainerService trainerService;

@@ -3,6 +3,7 @@ package com.gym.crm.model;
 import java.util.Date;
 
 public class Training {
+    private Long id;
     private String trainingName;
     private TrainingType trainingType;
     private Trainer trainer;
@@ -19,6 +20,14 @@ public class Training {
         this.trainee = trainee;
         this.trainingDate = trainingDate;
 
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTrainingName() {

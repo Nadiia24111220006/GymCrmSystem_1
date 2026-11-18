@@ -3,11 +3,11 @@ package com.gym.crm.storage;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,47 +15,51 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
-@Component
-public class StorageInitializer implements BeanPostProcessor {
+@Configuration
+public class StorageInitializer{
     private static final Logger log = LoggerFactory.getLogger(StorageInitializer.class);
 
-    @Value("${storage.init.file}")
-    private String initFileName;
+    @Bean
+    public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+        return new PropertySourcesPlaceholderConfigurer();
+    }
 
-    @Autowired
-    @Qualifier("traineeStorage")
-    private Map<Long, Trainee> traineeMap;
+    @Bean
+    public boolean initializeStorage(
+            @Value("${storage.init.file}") String initFileName,
+            @Qualifier("traineeStorage") Map<Long, Trainee> traineeStorage,
+            @Qualifier("trainerStorage") Map<Long, Trainer> trainerStorage,
+            @Qualifier("trainingStorage") Map<Long, Training> trainingStorage,
+            @Qualifier("traineeIdCounter") AtomicLong traineeIdCounter,
+            @Qualifier("trainerIdCounter") AtomicLong trainerIdCounter,
+            @Qualifier("trainingIdCounter") AtomicLong trainingIdCounter) {
 
-    @Autowired
-    @Qualifier("trainerStorage")
-    private Map<Long, Trainer> trainerMap;
-
-    @Autowired
-    @Qualifier("trainingStorage")
-    private Map<Long, Training> trainingMap;
-
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) {
-        if (bean instanceof Map && (beanName.equals("traineeStorage") || beanName.equals("trainerStorage") || beanName.equals("trainingStorage"))) {
-            log.info("Data storage table '{}' initialization has begun using file via BeanPostProcessor: {}", beanName, initFileName);
+            log.info("Data storage initialization has begun using file: {}", initFileName);
             try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(initFileName)) {
                 if (inputStream != null) {
                     ObjectMapper mapper = new ObjectMapper();
                     StorageDataDto data = mapper.readValue(inputStream, StorageDataDto.class);
 
                     if (data.getTrainees() != null) {
-                        long id = 1L;
                         for (Trainee trainee : data.getTrainees()) {
-                            trainee.setId(id);
-                            traineeMap.put(id++, trainee);
+                            trainee.setId(traineeIdCounter.getAndIncrement());
+                            traineeStorage.put(trainee.getId(), trainee);
                         }
                     }
                     if (data.getTrainers() != null) {
-                        long id = 1L;
                         for (Trainer trainer : data.getTrainers()) {
-                            trainer.setId(id);
-                            trainerMap.put(id++, trainer);
+                            trainer.setId(trainerIdCounter.getAndIncrement());
+                            trainerStorage.put(trainer.getId(), trainer);
+                        }
+                    }
+
+                    if (data.getTrainings() != null) {
+                        for (Training training : data.getTrainings()) {
+                            long id = trainingIdCounter.getAndIncrement();
+                            training.setId(id);
+                            trainingStorage.put(id, training);
                         }
                     }
                     log.info("Initialization file successfully loaded: {}", initFileName);
@@ -65,9 +69,7 @@ public class StorageInitializer implements BeanPostProcessor {
             } catch (Exception e) {
                 log.error("Error reading initialization file: {}", e.getMessage(), e);
             }
-            log.info("Storage successfully initialized");
-        }
-        return bean;
+        return true;
     }
 
     private static class StorageDataDto {

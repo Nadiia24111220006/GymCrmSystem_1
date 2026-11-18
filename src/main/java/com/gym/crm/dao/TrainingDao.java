@@ -23,6 +23,7 @@ public class TrainingDao {
 
     public Training save(Training training) {
         long id = trainingIdCounter.getAndIncrement();
+        training.setId(id);
         trainingMap.put(id, training);
         return training;
     }
@@ -33,6 +34,7 @@ public class TrainingDao {
 
     public Training update(long id, Training updatedTraining) {
         if (trainingMap.containsKey(id)) {
+            updatedTraining.setId(id);
             trainingMap.put(id, updatedTraining);
             return updatedTraining;
         }
