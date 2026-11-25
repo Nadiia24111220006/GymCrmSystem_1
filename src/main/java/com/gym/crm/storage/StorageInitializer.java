@@ -1,24 +1,27 @@
 package com.gym.crm.storage;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.gym.crm.model.TrainingType;
+import com.gym.crm.model.TrainingTypeCatalog;
+import com.gym.crm.service.PasswordUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Configuration
-public class StorageInitializer{
+public class StorageInitializer {
     private static final Logger log = LoggerFactory.getLogger(StorageInitializer.class);
 
     @Bean
@@ -27,49 +30,112 @@ public class StorageInitializer{
     }
 
     @Bean
-    public boolean initializeStorage(
+    public SmartInitializingSingleton initializeJpaStorage(
             @Value("${storage.init.file}") String initFileName,
-            @Qualifier("traineeStorage") Map<Long, Trainee> traineeStorage,
-            @Qualifier("trainerStorage") Map<Long, Trainer> trainerStorage,
-            @Qualifier("trainingStorage") Map<Long, Training> trainingStorage,
-            @Qualifier("traineeIdCounter") AtomicLong traineeIdCounter,
-            @Qualifier("trainerIdCounter") AtomicLong trainerIdCounter,
-            @Qualifier("trainingIdCounter") AtomicLong trainingIdCounter) {
-
-            log.info("Data storage initialization has begun using file: {}", initFileName);
+            EntityManagerFactory entityManagerFactory) {
+        return () -> {
+            log.info("JPA data initialization has begun using file: {}", initFileName);
             try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(initFileName)) {
-                if (inputStream != null) {
-                    ObjectMapper mapper = new ObjectMapper();
-                    StorageDataDto data = mapper.readValue(inputStream, StorageDataDto.class);
+                if (inputStream == null) {
+                    log.warn("Initialization file '{}' not found in classpath.", initFileName);
+                    return;
+                }
+
+                StorageDataDto data = new ObjectMapper().readValue(inputStream, StorageDataDto.class);
+                EntityManager entityManager = entityManagerFactory.createEntityManager();
+                entityManager.getTransaction().begin();
+
+                try {
+                    for (String typeName : TrainingTypeCatalog.getAllowedTypes()) {
+                        persistTrainingType(entityManager, typeName);
+                    }
 
                     if (data.getTrainees() != null) {
                         for (Trainee trainee : data.getTrainees()) {
-                            trainee.setId(traineeIdCounter.getAndIncrement());
-                            traineeStorage.put(trainee.getId(), trainee);
+                            if (findByUsername(entityManager, trainee.getUsername(), Trainee.class) == null) {
+                                trainee.setPassword(hashIfNeeded(trainee.getPassword()));
+                                entityManager.persist(trainee);
+                            }
                         }
                     }
+
                     if (data.getTrainers() != null) {
                         for (Trainer trainer : data.getTrainers()) {
-                            trainer.setId(trainerIdCounter.getAndIncrement());
-                            trainerStorage.put(trainer.getId(), trainer);
+                            if (findByUsername(entityManager, trainer.getUsername(), Trainer.class) == null) {
+                                if (trainer.getSpecialization() != null) {
+                                    trainer.setSpecialization(findOrCreateTrainingType(
+                                            entityManager, trainer.getSpecialization().getTrainingTypeName()));
+                                }
+                                trainer.setPassword(hashIfNeeded(trainer.getPassword()));
+                                entityManager.persist(trainer);
+                            }
                         }
                     }
 
                     if (data.getTrainings() != null) {
                         for (Training training : data.getTrainings()) {
-                            long id = trainingIdCounter.getAndIncrement();
-                            training.setId(id);
-                            trainingStorage.put(id, training);
+                            training.setTrainingType(findOrCreateTrainingType(
+                                    entityManager, training.getTrainingType().getTrainingTypeName()));
+                            entityManager.persist(training);
                         }
                     }
-                    log.info("Initialization file successfully loaded: {}", initFileName);
-                } else {
-                    log.warn("Warning: Initialization file '{}' not found in classpath.", initFileName);
+                    entityManager.getTransaction().commit();
+                    log.info("JPA initialization file successfully loaded: {}", initFileName);
+                } catch (RuntimeException exception) {
+                    if (entityManager.getTransaction().isActive()) {
+                        entityManager.getTransaction().rollback();
+                    }
+                    throw exception;
+                } finally {
+                    entityManager.close();
                 }
-            } catch (Exception e) {
-                log.error("Error reading initialization file: {}", e.getMessage(), e);
+            } catch (Exception exception) {
+                log.error("Error reading JPA initialization file: {}", exception.getMessage(), exception);
             }
-        return true;
+        };
+    }
+
+    private void persistTrainingType(EntityManager entityManager, String typeName) {
+        findOrCreateTrainingType(entityManager, typeName);
+    }
+
+    private TrainingType findOrCreateTrainingType(EntityManager entityManager, String typeName) {
+        if (typeName == null || typeName.isBlank()) {
+            throw new IllegalArgumentException("Training type is required");
+        }
+        if (!TrainingTypeCatalog.isAllowed(typeName)) {
+            throw new IllegalArgumentException("Unsupported training type: " + typeName);
+        }
+        TrainingType existing = entityManager.createQuery(
+                        "select t from TrainingType t where t.trainingTypeName = :name", TrainingType.class)
+                .setParameter("name", typeName)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        TrainingType created = new TrainingType(typeName);
+        entityManager.persist(created);
+        return created;
+    }
+
+    private <T> T findByUsername(EntityManager entityManager, String username, Class<T> type) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        return entityManager.createQuery("select e from " + type.getSimpleName()
+                        + " e where e.username = :username", type)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String hashIfNeeded(String password) {
+        return password != null && password.startsWith("pbkdf2$")
+                ? password
+                : PasswordUtils.encode(password);
     }
 
     private static class StorageDataDto {

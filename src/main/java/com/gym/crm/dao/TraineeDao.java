@@ -1,51 +1,62 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.model.Trainee;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class TraineeDao {
-    private Map<Long, Trainee> traineeMap;
-    private AtomicLong traineeIdCounter;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @Autowired
-    public void setStorage(@Qualifier("traineeStorage") Map<Long, Trainee> traineeMap,
-                           @Qualifier("traineeIdCounter") AtomicLong traineeIdCounter) {
-        this.traineeMap = traineeMap;
-        this.traineeIdCounter = traineeIdCounter;
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     public Trainee save(Trainee trainee) {
-        long id = traineeIdCounter.getAndIncrement();
-        trainee.setId(id);
-        traineeMap.put(id, trainee);
+        entityManager.persist(trainee);
         return trainee;
     }
 
     public Trainee findById(long id) {
-        return traineeMap.get(id);
+        return entityManager.find(Trainee.class, id);
     }
 
     public Trainee update(long id, Trainee updatedTrainee) {
-        if (traineeMap.containsKey(id)) {
-            updatedTrainee.setId(id);
-            traineeMap.put(id, updatedTrainee);
-            return updatedTrainee;
+        Trainee existing = entityManager.find(Trainee.class, id);
+        if (existing == null) {
+            return null;
         }
-        return null;
+        updatedTrainee.setId(id);
+        return entityManager.merge(updatedTrainee);
     }
 
     public void delete(long id) {
-        traineeMap.remove(id);
+        Trainee existing = entityManager.find(Trainee.class, id);
+        if (existing != null) {
+            entityManager.remove(existing);
+        }
     }
 
     public Collection<Trainee> findAll() {
-        return traineeMap.values();
+        return entityManager.createQuery("select t from Trainee t", Trainee.class).getResultList();
+    }
+
+    public Trainee findByUsername(String username) {
+        return entityManager.createQuery("select t from Trainee t where t.username = :username", Trainee.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    public void deleteByUsername(String username) {
+        Trainee trainee = findByUsername(username);
+        if (trainee != null) {
+            entityManager.remove(trainee);
+        }
     }
 }

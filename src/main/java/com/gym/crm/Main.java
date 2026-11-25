@@ -2,7 +2,6 @@ package com.gym.crm;
 
 import com.gym.crm.model.Trainee;
 import com.gym.crm.service.TraineeService;
-import com.gym.crm.service.TrainerService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -21,13 +20,12 @@ public class Main {
         System.out.println("\n--- SPRING CONTAINER SUCCESSFULLY STARTED ---\n");
 
         TraineeService traineeService = context.getBean(TraineeService.class);
-        TrainerService trainerService = context.getBean(TrainerService.class);
 
         Trainee trainee1 = traineeService.createTrainee("John", "Smith", new Date(), "123 Main St");
         System.out.println("Created trainee:");
         System.out.println("Name: " + trainee1.getFirstName() + " " + trainee1.getLastName());
         System.out.println("Username: " + trainee1.getUsername());
-        System.out.println("Password: " + trainee1.getPassword().substring(0, 3) + "... (length: " + trainee1.getPassword().length() + ")");
+        System.out.println("Password: generated securely and not displayed");
 
         System.out.println("\n----------------------------------\n");
 
@@ -35,7 +33,7 @@ public class Main {
         System.out.println("Created second trainee with the same name:");
         System.out.println("Name: " + trainee2.getFirstName() + " " + trainee2.getLastName());
         System.out.println("Username: " + trainee2.getUsername());
-        System.out.println("Password: " + trainee2.getPassword().substring(0, 3) + "... (length: " + trainee2.getPassword().length() + ")");
+        System.out.println("Password: generated securely and not displayed");
 
         context.close();
     }

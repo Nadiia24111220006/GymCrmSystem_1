@@ -1,51 +1,55 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.model.Trainer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
 public class TrainerDao {
-    private Map<Long, Trainer> trainerMap;
-    private AtomicLong trainerIdCounter;
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @Autowired
-    public void setStorage(@Qualifier("trainerStorage") Map<Long, Trainer> trainerMap,
-                           @Qualifier("trainerIdCounter") AtomicLong trainerIdCounter) {
-        this.trainerMap = trainerMap;
-        this.trainerIdCounter = trainerIdCounter;
+    public void setEntityManager(EntityManager entityManager) {
+        this.entityManager = entityManager;
     }
 
     public Trainer save(Trainer trainer) {
-        long id = trainerIdCounter.getAndIncrement();
-        trainer.setId(id);
-        trainerMap.put(id, trainer);
+        entityManager.persist(trainer);
         return trainer;
     }
 
     public Trainer findById(long id) {
-        return trainerMap.get(id);
+        return entityManager.find(Trainer.class, id);
     }
 
     public Trainer update(long id, Trainer updatedTrainer) {
-        if (trainerMap.containsKey(id)) {
-            updatedTrainer.setId(id);
-            trainerMap.put(id, updatedTrainer);
-            return updatedTrainer;
+        Trainer existing = entityManager.find(Trainer.class, id);
+        if (existing == null) {
+            return null;
         }
-        return null;
+        updatedTrainer.setId(id);
+        return entityManager.merge(updatedTrainer);
     }
 
     public void delete(long id) {
-        trainerMap.remove(id);
+        Trainer existing = entityManager.find(Trainer.class, id);
+        if (existing != null) {
+            entityManager.remove(existing);
+        }
     }
 
     public Collection<Trainer> findAll() {
-        return trainerMap.values();
+        return entityManager.createQuery("select t from Trainer t", Trainer.class).getResultList();
+    }
+
+    public Trainer findByUsername(String username) {
+        return entityManager.createQuery("select t from Trainer t where t.username = :username", Trainer.class)
+                .setParameter("username", username)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 }

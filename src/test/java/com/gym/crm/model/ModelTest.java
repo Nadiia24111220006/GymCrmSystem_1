@@ -37,16 +37,16 @@ public class ModelTest {
         assertEquals("Fitness", typeParam.getTrainingTypeName());
 
         Trainee trainee = new Trainee();
-        trainee.setAdress("Street");
-        trainee.setDateofBirth(new Date());
-        assertNotNull(trainee.getAdress());
-        assertNotNull(trainee.getDateofBirth());
+        trainee.setAddress("Street");
+        trainee.setDateOfBirth(new Date());
+        assertNotNull(trainee.getAddress());
+        assertNotNull(trainee.getDateOfBirth());
 
         Trainee traineeParam = new Trainee("Alice", "Smith", "Kyiv", new Date());
         assertEquals("Alice", traineeParam.getFirstName());
         assertEquals("Smith", traineeParam.getLastName());
-        assertEquals("Kyiv", traineeParam.getAdress());
-        assertNotNull(traineeParam.getDateofBirth());
+        assertEquals("Kyiv", traineeParam.getAddress());
+        assertNotNull(traineeParam.getDateOfBirth());
 
         Trainer trainer = new Trainer();
         trainer.setSpecialization(type);
@@ -76,5 +76,23 @@ public class ModelTest {
         assertEquals(trainer, trainingParam.getTrainer());
         assertEquals(trainee, trainingParam.getTrainee());
         assertNotNull(trainingParam.getTrainingDate());
+
+        Trainee relationTrainee = new Trainee();
+        relationTrainee.setTrainers(new java.util.HashSet<>());
+        assertNotNull(relationTrainee.getTrainers());
+
+        Trainer relationTrainer = new Trainer();
+        relationTrainer.setTrainees(new java.util.HashSet<>());
+        assertNotNull(relationTrainer.getTrainees());
+
+        TrainingType catalogType = new TrainingType("Strength");
+        catalogType.setId(5L);
+        assertEquals(5L, catalogType.getId());
+
+        Training detailedTraining = new Training("Pilates", catalogType, relationTrainer, relationTrainee, new Date(), 45);
+        detailedTraining.setId(20L);
+        detailedTraining.setTrainingDuration(50);
+        assertEquals(20L, detailedTraining.getId());
+        assertEquals(50, detailedTraining.getTrainingDuration());
     }
 }
